@@ -380,7 +380,7 @@ class Application(tk.Frame):
         
     def search_currency(self):
         dictslug = getDict("slug")
-        if(type(data)==ConnectionError or type(data)==Timeout or type(data)==TooManyRedirects):
+        if(type(dictslug)==ConnectionError or type(dictslug)==Timeout or type(dictslug)==TooManyRedirects):
             ttk.Label(self.search_frame,text="Failed to establish API Connection").grid(row=0,pady=5,padx=10,sticky="news")
             ttk.Button(self.search_frame,text="Refresh",command=self.search_refresh).grid(row=1,pady=5,padx=10,sticky="news")
             ttk.Label(self.owned_frame,text="Failed to establish API Connection").grid(row=0,pady=5,padx=10,sticky="news")
