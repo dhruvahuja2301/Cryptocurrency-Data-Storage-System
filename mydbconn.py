@@ -1,9 +1,8 @@
-import mysql.connector
+from env import database, host, user, password
+import psycopg2
 
-def mydb():
+def mydbfunc():
     try:
-        mydb = mysql.connector.connect(host = "localhost", user = "root", passwd = "admin", database = "crypto_storage")
-        return mydb
+        return psycopg2.connect(host=host, user=user, password=password, database=database)
     except Exception as e:
-        # print(e)
         return e

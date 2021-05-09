@@ -1,21 +1,28 @@
-import mysql.connector
+import psycopg2
 import time
 import datetime
 from decimal import Decimal
+from mydbconn import mydbfunc
 import bcrypt
-from mydbconn import mydb
 
 # mysql connection
-mydb = mydb()
 def connect():
-    if(type(mydb) != mysql.connector.connection.MySQLConnection):
+    global mydb
+    mydb = mydbfunc()
+    if(type(mydb) != psycopg2.extensions.connection):
+        # print(1)
         return mydb
     else:
+        # print(2)
+        create_cursor()
+        # print(3)
         return True
 
-if(type(mydb) == mysql.connector.connection.MySQLConnection):
-    cursor=mydb.cursor()
 # create cursor
+def create_cursor():
+    # print(mydb)
+    global cursor
+    cursor=mydb.cursor()
 
 customer_keys=("first_name", "last_name", "username", "customer_id", "email_id")
 password_keys=("customer_id","username", "password")
@@ -26,11 +33,11 @@ sold_keys=("currency_id", "total_sold", "selling_amt", "time_sold", "customer_id
 def get_hashed_password(plain_text_password):
     # Hash a password for the first time
     #   (Using bcrypt, the salt is saved into the hash itself)
-    return bcrypt.hashpw(plain_text_password, bcrypt.gensalt())
+    return bcrypt.hashpw(plain_text_password.encode('utf-8'), bcrypt.gensalt())
 
 def check_password(plain_text_password, hashed_password):
     # Check hashed password. Using bcrypt, the salt is saved into the hash itself
-    return bcrypt.checkpw(plain_text_password, hashed_password)
+    return bcrypt.checkpw(plain_text_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 def get_dictionary(keys,values):
     dictionary = {}
@@ -48,7 +55,7 @@ def insert_customer(first,last,user,pwd,email):
         if(flag):
             return "Username Already Exists"
         hashpwd = get_hashed_password(pwd) 
-        cursor.execute("INSERT INTO Customers(first_name, last_name, username, password, email_id) VALUES (\"" + first + "\",\"" + last +"\",\""+ user +"\",\"" + hashpwd + "\",\"" + email + "\")")
+        cursor.execute("INSERT INTO Customers(first_name, last_name, username, password, email_id) VALUES ('" + first + "','" + last +"','"+ user +"','" + hashpwd + "','" + email + "')")
 
         # commit changes
         mydb.commit()
@@ -60,7 +67,7 @@ def insert_customer(first,last,user,pwd,email):
 def get_customer(customer_id=None):
     try:
         if(customer_id!=None):
-            cursor.execute("SELECT first_name, last_name, username, customer_id, email_id FROM customers WHERE customer_id=\""+ str(customer_id) +"\"")        
+            cursor.execute("SELECT first_name, last_name, username, customer_id, email_id FROM customers WHERE customer_id='"+ str(customer_id) +"'")        
         else:
             cursor.execute("SELECT first_name, last_name, username, customer_id, email_id FROM customers")
         result=cursor.fetchall()
@@ -75,7 +82,7 @@ def get_customer(customer_id=None):
         return e
 def verify_customer(user,pwd):
     try:
-        cursor.execute("SELECT customer_id, username, password FROM customers WHERE username=\""+user+"\"")        
+        cursor.execute("SELECT customer_id, username, password FROM customers WHERE username='"+user+"'")        
         result=get_dictionary(password_keys,cursor.fetchall()[0])
         
         if(check_password(pwd,result["password"])):
@@ -88,7 +95,7 @@ def verify_customer(user,pwd):
 
 def update_name(first,last,customer_id):
     try:
-        cursor.execute("UPDATE customers SET first_name = \"" + first + "\", last_name = \"" + last + "\" WHERE customer_id="+str(customer_id))
+        cursor.execute("UPDATE customers SET first_name = '" + first + "', last_name = '" + last + "' WHERE customer_id="+str(customer_id))
         mydb.commit()
         return True
     except Exception as e:
@@ -105,7 +112,7 @@ def delete_customer(customer_id):
 def update_pwd(pwd,customer_id):
     try:
         hashpwd = get_hashed_password(pwd) 
-        cursor.execute("UPDATE customers SET password = \"" + hashpwd + "\" WHERE customer_id="+str(customer_id))
+        cursor.execute("UPDATE customers SET password = '" + hashpwd + "' WHERE customer_id="+str(customer_id))
         mydb.commit()
         return True
     except Exception:
@@ -125,7 +132,7 @@ def buy_currency(currency_id, total_bought, amount_bought, customer_id):
         # commit changes
         mydb.commit()
 
-        cursor.execute("INSERT INTO Bought(currency_id, total_bought, buying_amt, time_bought, customer_id) VALUES (" + str(currency_id) + "," + str(total_bought) +","+ str(amount_bought) +",\""+ datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') +"\"," + str(customer_id) + ")")
+        cursor.execute("INSERT INTO Bought(currency_id, total_bought, buying_amt, time_bought, customer_id) VALUES (" + str(currency_id) + "," + str(total_bought) +","+ str(amount_bought) +",'"+ datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') +"'," + str(customer_id) + ")")
         
         # commit changes
         mydb.commit()
@@ -144,13 +151,13 @@ def sell_currency(currency_id, total_sold, amount_sold, customer_id):
         total_sold = Decimal(str(total_sold))
         amount_sold = Decimal(str(amount_sold))
         if(result['total_bought']>=(total_sold+result['total_sold'])):
-            cursor.execute("UPDATE Transactions SET total_sold = \"" + str(total_sold+result["total_sold"]) + "\", amount_sold = " + str(amount_sold+result["amount_sold"]) + " WHERE customer_id="+str(customer_id)+" AND currency_id="+str(currency_id))
+            cursor.execute("UPDATE Transactions SET total_sold = '" + str(total_sold+result["total_sold"]) + "', amount_sold = " + str(amount_sold+result["amount_sold"]) + " WHERE customer_id="+str(customer_id)+" AND currency_id="+str(currency_id))
         else: 
             return "Amount must be less than Owned Amount"
         # commit changes
         mydb.commit()
 
-        cursor.execute("INSERT INTO Sold(currency_id, total_sold, selling_amt, time_sold, customer_id) VALUES (" + str(currency_id) + "," + str(total_sold) +","+ str(amount_sold) +",\""+ datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') +"\"," + str(customer_id) + ")")
+        cursor.execute("INSERT INTO Sold(currency_id, total_sold, selling_amt, time_sold, customer_id) VALUES (" + str(currency_id) + "," + str(total_sold) +","+ str(amount_sold) +",'"+ datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') +"'," + str(customer_id) + ")")
         
         # commit changes
         mydb.commit()
@@ -202,3 +209,11 @@ def get_selling_details(currency_id=None,customer_id=None):
         selling_list.append(get_dictionary(sold_keys,x))
     return selling_list
 
+def close():
+    cursor.close()
+    mydb.close()
+
+# print(sell_currency(1,0.2,1000000,1))
+# print(get_transaction())
+# print(get_buying_details())
+# print(get_selling_details())
