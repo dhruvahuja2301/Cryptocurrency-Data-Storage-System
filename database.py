@@ -54,8 +54,8 @@ def insert_customer(first,last,user,pwd,email):
                 flag=True
         if(flag):
             return "Username Already Exists"
-        hashpwd = get_hashed_password(pwd) 
-        cursor.execute("INSERT INTO Customers(first_name, last_name, username, password, email_id) VALUES ('" + first + "','" + last +"','"+ user +"','" + hashpwd + "','" + email + "')")
+          
+        cursor.execute("INSERT INTO Customers(first_name, last_name, username, password, email_id) VALUES ('" + first + "','" + last +"','"+ user +"'," + str(get_hashed_password(pwd))[1:] + ",'" + email + "')")
 
         # commit changes
         mydb.commit()
@@ -82,7 +82,7 @@ def get_customer(customer_id=None):
         return e
 def verify_customer(user,pwd):
     try:
-        cursor.execute("SELECT customer_id, username, password FROM customers WHERE username='"+user+"'")        
+        cursor.execute("SELECT customer_id, username, encode(password, 'escape') as password FROM customers WHERE username='"+user+"'")        
         result=get_dictionary(password_keys,cursor.fetchall()[0])
         
         if(check_password(pwd,result["password"])):
@@ -213,7 +213,3 @@ def close():
     cursor.close()
     mydb.close()
 
-# print(sell_currency(1,0.2,1000000,1))
-# print(get_transaction())
-# print(get_buying_details())
-# print(get_selling_details())
