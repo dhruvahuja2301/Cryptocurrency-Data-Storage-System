@@ -18,9 +18,13 @@ def checkemail(email):
 def numberCheck(input):
     try:
         float(input)
-        return True
+        if(float(input)>0):
+            return True
+        else:
+            raise Exception("Value cannot by less than or equal to 0")
     except (Exception) :
         return False
+
 
 # --------------------------------- Check for Number and Email End ---------------------------------
 
@@ -63,18 +67,19 @@ class Application(ttk.Frame):
     def logout(self):
         self.btn_logout.destroy()
         self.main_notebook.destroy()
+        self.frame_main.destroy()
         self.destroy()
-        Authentication(master=root)
         del self
+        Authentication(master=root)
 
     # --------------------------------- Logout End ---------------------------------
 
     # --------------------------------- Page Start ---------------------------------
 
     def page(self):
-        frame_main=ttk.Frame(self.master)
-        frame_main.pack(fill="both")
-        self.btn_logout = ttk.Button(frame_main,text="Logout",command=self.logout)
+        self.frame_main=ttk.Frame(self.master)
+        self.frame_main.pack(fill="both")
+        self.btn_logout = ttk.Button(self.frame_main,text="Logout",command=self.logout)
         self.btn_logout.pack(fill="x",side="right",padx=10)
         self.createNoteBook()
            
@@ -372,8 +377,8 @@ class Application(ttk.Frame):
         for i in basedata:
             id=i["currency_id"]
             curr=data[str(id)]
-            curr_val=(float(i['total_bought']-i['total_sold']))*curr['quote']['INR']['price']
-            change=curr_val-(float(i['amount_bought']-i['amount_sold']))
+            curr_val=round(round(float(i['total_bought']-i['total_sold']),4)*round(curr['quote']['INR']['price'],4),4)
+            change=round(curr_val-(float(i['amount_bought']-i['amount_sold'])),4)
             total_change+=change
 
         if(total_change>0):
@@ -387,7 +392,7 @@ class Application(ttk.Frame):
         if(text=="No Profit/Loss"):
             ttk.Label(self.owned_frame,text=text,font=("Arial", 20)).grid(row=0,pady=5,padx=10,sticky="news")
         else:
-            ttk.Label(self.owned_frame,text=text+" : "+str(total_change),font=("Arial", 20)).grid(row=0,pady=5,padx=10,sticky="news")
+            ttk.Label(self.owned_frame,text=text+" : "+str(round(total_change,4)),font=("Arial", 20)).grid(row=0,pady=5,padx=10,sticky="news")
 
         count=2
         for i in basedata:
@@ -405,10 +410,10 @@ class Application(ttk.Frame):
     def cardOwned(self, frame, base, data):
         ttk.Label(frame,text=(data['name']+"("+data['symbol']+")")).grid(row=0, column=0,sticky="ew", padx=10,pady=5)
         # ttk.Label(frame,text=("Market Capital: "+str(data['quote']['INR']['market_cap']))).grid(row=1, column=0)
-        ttk.Label(frame,text="Currency Price: "+str(data['quote']['INR']['price'])).grid(row=1, column=0,sticky="ew", padx=10,pady=5)
+        ttk.Label(frame,text="Currency Price: ₹"+str( round(data['quote']['INR']['price'],4))).grid(row=1, column=0,sticky="ew", padx=10,pady=5)
         ttk.Label(frame,text=("last updated: "+str(data['quote']['INR']['last_updated']))).grid(row=0, column=1,sticky="ew", padx=10)
-        curr_val=(float(base['total_bought']-base['total_sold']))*data['quote']['INR']['price']
-        change=curr_val-(float(base['amount_bought']-base['amount_sold']))
+        curr_val=round(round(float(base['total_bought']-base['total_sold']),4)*data['quote']['INR']['price'],4)
+        change=round(curr_val-(float(base['amount_bought']-base['amount_sold'])),4)
         if(change>0):
             text="Profit"
         elif(change<0):
@@ -417,11 +422,11 @@ class Application(ttk.Frame):
         else:
             text="No Profit/Loss"
         ttk.Label(frame,text=("Current Value: ₹"+str(curr_val))).grid(row=2, column=0, sticky="nse", padx=10)
-        ttk.Label(frame,text=("Currency Owned : ₹"+str(base['total_bought']-base['total_sold']))).grid(row=2, column=1, sticky="nse", padx=10)
+        ttk.Label(frame,text=("Currency Owned : "+str(base['total_bought']-base['total_sold']))).grid(row=2, column=1, sticky="nse", padx=10)
         if(text=="No Profit/Loss"):
             ttk.Label(frame,text=text).grid(row=4, column=0,sticky="nsew", padx=10,pady=5,ipadx=5)
         else:
-            ttk.Label(frame,text=(text + ": "+str(change))).grid(row=4, column=0,sticky="nsew", padx=10,pady=5,ipadx=5)
+            ttk.Label(frame,text=(text + ": ₹"+str(change))).grid(row=4, column=0,sticky="nsew", padx=10,pady=5,ipadx=5)
         ttk.Button(frame,text="Sell",command=lambda: self.sell(frame,base,data)).grid(row=4, column=1, sticky="e", padx=5)
     
     # --------------------------------- Owned Card End ---------------------------------
@@ -811,8 +816,8 @@ class Authentication(ttk.Frame):
     def login_sucess(self,userid):
         self.login_notebook.destroy()
         self.destroy()
-        Application(userid,master=root)
         del self
+        Application(userid,master=root)
     
     # --------------------------------- Successfull Login End ---------------------------------
     
